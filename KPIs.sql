@@ -1,23 +1,14 @@
--- Top list of Countries had the highest cash turnover over a period of time
+-- Top list of Countries/Players had the highest cash turnover over a period of time
 select p.country,
+       p.playerID,
        sum(gt.realAmount) 
 from GameTransaction gt
 inner join Player p
 on gt.playerID = p.playerID
 where gt.txType = 'DEPOSIT'
 and gt.transactionDateTime between :1 and :2
-group by p.country
-order by sum(gt.realAmount) desc;
-
--- Top list of Players had the highest cash turnover over a period of time
-select p.playerID,
-       sum(gt.realAmount) 
-from GameTransaction gt
-inner join Player p
-on gt.playerID = p.playerID
-where gt.txType = 'DEPOSIT'
-and gt.transactionDateTime between :1 and :2
-group by p.country
+group by p.country,
+         p.playerID
 order by sum(gt.realAmount) desc;
 
 -- Top list with the most profitable customers? 
@@ -33,7 +24,7 @@ with deposits as (
     where pt.txType = 'WITHDRAWAL'
 ), profit as (
     select d.amount - w.amount as amount,
-            d.playerID as playerID
+           d.playerID as playerID
     from deposits d
     inner join withdrawals w
     on d.playerID = w.playerID
@@ -57,7 +48,7 @@ create or replace function convertTimestampToCET(timestamp) RETURNS TIMESTAMP AS
 $$ LANGUAGE SQL;
 
 select sum(gt.realAmount + gt.bonusAmount),
-       DATE_TRUNC('hour', convertTimestampToCET(gt.transactionDateTime))
+       DATE_TRUNC('hour', convertTimestampToCET(gt.transactionDateTime))            -- Reusing example from before to showcase timestamp conversion.
 from GameTransaction gt
 inner join Player p
 on gt.playerID = p.playerID
@@ -65,16 +56,7 @@ where p.country = 'RO'
 and gt.txType = 'WAGER'
 group by DATE_TRUNC('hour', convertTimestampToCET(gt.transactionDateTime));
 
-select sum(gt.realAmount + gt.bonusAmount),
-       DATE_TRUNC('hour', convert_timezone_from_to(gt.transactionDateTime,'UTC','CET'))
-from GameTransaction gt
-inner join Player p
-on gt.playerID = p.playerID
-where p.country = 'RO'
-and gt.txType = 'WAGER'
-group by DATE_TRUNC('hour', convert_timezone_from_to(gt.transactionDateTime,'UTC','CET'));
-
---KPIs (Definitions)
+--KPIs (Definitions) - I didn't know if this was extra, so I went ahead and did it just in case you were looking for a query to retrieve the mentioned KPIs.
 with eur_exchange_rate as (
     select CurrencyDate,
            Currency,
